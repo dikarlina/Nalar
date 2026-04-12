@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_screen.dart';
+import 'isi_kelas.dart';
+import 'create_class_form.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,31 +11,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
   // ================= STATE =================
   String selectedMenu = "beranda";
 
   final List<Map<String, dynamic>> classes = [
-    {
-      'title': 'Kalkulus',
-      'isTaught': true,
-      'hasTask': true,
-    },
-    {
-      'title': 'Biologi',
-      'isTaught': false,
-      'hasTask': true,
-    },
-    {
-      'title': 'Fisika',
-      'isTaught': true,
-      'hasTask': false,
-    },
-    {
-      'title': 'Aljabar',
-      'isTaught': false,
-      'hasTask': false,
-    },
+    {'title': 'Kalkulus', 'isTaught': true, 'hasTask': true},
+    {'title': 'Biologi', 'isTaught': false, 'hasTask': true},
+    {'title': 'Fisika', 'isTaught': true, 'hasTask': false},
+    {'title': 'Aljabar', 'isTaught': false, 'hasTask': false},
   ];
 
   // ================= FILTER =================
@@ -80,10 +65,30 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text(
           "NALAR",
           style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF327CA0),
-          letterSpacing: 2,)
-          ,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF327CA0),
+            letterSpacing: 2,
+          ),
+        ),
+      ),
+
+      // ================= FAB =================
+      floatingActionButton: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: Color(0xFF327CA0), width: 2.5),
+        ),
+        child: IconButton(
+          icon: const Icon(Icons.add, color: Color(0xFF327CA0), size: 30),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CreateClassForm()),
+            );
+          },
         ),
       ),
 
@@ -96,10 +101,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(
                   "NALAR",
                   style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF327CA0),
-                  letterSpacing: 2,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF327CA0),
+                    letterSpacing: 2,
                   ),
                 ),
               ),
@@ -110,8 +115,8 @@ class _HomeScreenState extends State<HomeScreen> {
               leading: const Icon(Icons.home),
               title: const Text("Beranda"),
               selected: selectedMenu == "beranda",
-                selectedColor: const Color(0xFF327CA0),
-                iconColor: Colors.black,
+              selectedColor: const Color(0xFF327CA0),
+              iconColor: Colors.black,
               onTap: () {
                 setState(() => selectedMenu = "beranda");
                 Navigator.pop(context);
@@ -125,8 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 ListTile(
                   title: const Text("Untuk Diperiksa"),
-                    selectedColor: const Color(0xFF327CA0), 
-                    iconColor: Colors.black,
+                  selectedColor: const Color(0xFF327CA0),
+                  iconColor: Colors.black,
                   onTap: () {
                     setState(() => selectedMenu = "diperiksa");
                     Navigator.pop(context);
@@ -142,8 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 ListTile(
                   title: const Text("Tugas Saya"),
-                    selectedColor: const Color(0xFF327CA0), 
-                    iconColor: Colors.black,
+                  selectedColor: const Color(0xFF327CA0),
+                  iconColor: Colors.black,
                   onTap: () {
                     setState(() => selectedMenu = "tugas");
                     Navigator.pop(context);
@@ -155,7 +160,10 @@ class _HomeScreenState extends State<HomeScreen> {
             const Spacer(),
 
             ListTile(
-              leading: const Icon(Icons.logout, color: Color.fromARGB(255, 184, 12, 0)),
+              leading: const Icon(
+                Icons.logout,
+                color: Color.fromARGB(255, 184, 12, 0),
+              ),
               title: const Text('Keluar'),
               onTap: () {
                 Navigator.pushAndRemoveUntil(
@@ -175,13 +183,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             const Text(
               "Kelas Saya",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 15),
@@ -206,40 +210,49 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (context, index) {
                   final item = filteredClasses[index];
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    height: 130,
-                    decoration: BoxDecoration(
-                      color: getColor(item['title']),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Stack(
-                      children: [
-
-                        // Judul
-                        Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Text(
-                            item['title'],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClassDetailsScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      height: 130,
+                      decoration: BoxDecoration(
+                        color: getColor(item['title']),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Judul
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Text(
+                              item['title'],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
 
-                        // Icon kanan bawah
-                        Positioned(
-                          right: 20,
-                          bottom: 20,
-                          child: Icon(
-                            getIcon(index),
-                            size: 50,
-                            color: Colors.white.withOpacity(0.8),
+                          // Icon kanan bawah
+                          Positioned(
+                            right: 20,
+                            bottom: 20,
+                            child: Icon(
+                              getIcon(index),
+                              size: 50,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
