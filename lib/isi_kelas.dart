@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'daftar_tugas.dart';
+import 'anggota_kelas.dart';
+import 'forum_kelas.dart';
 
 class ClassDetailsScreen extends StatefulWidget {
   const ClassDetailsScreen({super.key});
@@ -8,6 +11,8 @@ class ClassDetailsScreen extends StatefulWidget {
 }
 
 class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
+  int _selectedIndex = 0;
+
   final List<Map<String, dynamic>> assignments = [
     {
       'title': 'Tugas baru: Post-test Integral Tentu',
@@ -29,20 +34,43 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
     },
   ];
 
+  void _onItemTapped(int index) {
+    if (index == 0) {
+      setState(() {
+        _selectedIndex = 0;
+      });
+    } else if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => DaftarTugasScreen()),
+      );
+    } else if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AnggotaKelasScreen()),
+      );
+    } else if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ForumKelasScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kalkulus'),
+        title: Text('Kalkulus'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(Icons.edit),
             onPressed: () {
               // Logic for editing class
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete),
+            icon: Icon(Icons.delete),
             onPressed: () {
               // Logic for deleting class
             },
@@ -50,14 +78,14 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Class Information Section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
                   'Created by Zahra Mufida',
                   style: TextStyle(fontSize: 14, color: Colors.grey),
@@ -68,7 +96,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Buttons for creating material and assignment
             Row(
@@ -78,24 +106,24 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
                   onPressed: () {
                     // Navigate to create material screen
                   },
-                  child: const Text('Create Material'),
+                  child: Text('Create Material'),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     // Navigate to create assignment screen
                   },
-                  child: const Text('Create Assignment'),
+                  child: Text('Create Assignment'),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // Assignments Section
-            const Text(
+            Text(
               'Assignments',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
                 itemCount: assignments.length,
@@ -105,7 +133,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
                     leading: Icon(assignment['icon'], color: Colors.blue),
                     title: Text(assignment['title']),
                     subtitle: Text(assignment['date']),
-                    trailing: const Icon(Icons.more_vert),
+                    trailing: Icon(Icons.more_vert),
                     onTap: () {
                       // Logic for assignment details
                     },
@@ -115,11 +143,11 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
             ),
 
             // Materials Section
-            const Text(
+            Text(
               'Materials',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
                 itemCount: materials.length,
@@ -129,7 +157,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
                     leading: Icon(material['icon'], color: Colors.green),
                     title: Text(material['title']),
                     subtitle: Text(material['date']),
-                    trailing: const Icon(Icons.more_vert),
+                    trailing: Icon(Icons.more_vert),
                     onTap: () {
                       // Logic for material details
                     },
@@ -139,6 +167,22 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.class_), label: 'Kelas'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Tugas'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Anggota'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.forum),
+            label: 'Forum Kelas',
+          ),
+        ],
       ),
     );
   }
