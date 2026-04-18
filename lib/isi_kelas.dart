@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'daftar_tugas.dart';
 import 'anggota_kelas.dart';
 import 'forum_kelas.dart';
+import 'setting_kelas.dart';
 
 class ClassDetailsScreen extends StatefulWidget {
   const ClassDetailsScreen({super.key});
@@ -66,7 +67,14 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
           IconButton(
             icon: Icon(Icons.edit),
             onPressed: () {
-              // Logic for editing class
+              // Navigate to ClassSettingsScreen when the button is pressed
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ClassSettingsScreen(), // Navigate to the ClassSettingsScreen
+                ),
+              );
             },
           ),
           IconButton(

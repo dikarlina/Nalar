@@ -52,7 +52,7 @@ class _DaftarTugasScreenState extends State<DaftarTugasScreen> {
         title: Text(
           'Kalkulus',
           style: TextStyle(
-            color: Color(0xFF2196F3),
+            color: Color(0xFF327BA1),
             fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
@@ -110,7 +110,7 @@ class _DaftarTugasScreenState extends State<DaftarTugasScreen> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Color(0xFF327BA1),
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
         elevation: 8,
@@ -139,7 +139,7 @@ class _DaftarTugasScreenState extends State<DaftarTugasScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.edit, color: Colors.blue),
+                leading: Icon(Icons.edit, color: Color(0xFF327BA1)),
                 title: Text('Edit Tugas'),
                 onTap: () {
                   Navigator.pop(context);
