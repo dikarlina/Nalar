@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'dashboard_admin.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -34,10 +35,20 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      final email = emailController.text.trim();
+
+      // cek admin
+      if (email == "mauvesagara@gmail.com") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardAdmin()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     }
   }
 
@@ -66,10 +77,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
               SizedBox(height: screenHeight * 0.03),
 
-              Image.asset(
-                'assets/logo1.png',
-                height: screenHeight * 0.2,
-              ),
+              Image.asset('assets/logo1.png', height: screenHeight * 0.2),
 
               SizedBox(height: screenHeight * 0.03),
 
@@ -153,10 +161,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 height: 50,
                 child: OutlinedButton.icon(
                   onPressed: () {},
-                  icon: Image.asset(
-                    'assets/google.png',
-                    height: 20,
-                  ),
+                  icon: Image.asset('assets/google.png', height: 20),
                   label: const Text(
                     'Continue with Google',
                     style: TextStyle(color: Colors.black87),
