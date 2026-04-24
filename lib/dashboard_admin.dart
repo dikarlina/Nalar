@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:our_app/profile_admin.dart';
 
 class DashboardAdmin extends StatelessWidget {
   const DashboardAdmin({super.key});
@@ -10,7 +11,10 @@ class DashboardAdmin extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6F8),
+        backgroundColor: const Color(0xFFEAF3F7),
+
+        /// DRAWER
+        drawer: const AdminDrawer(),
 
         /// HEADER
         appBar: AppBar(
@@ -18,6 +22,7 @@ class DashboardAdmin extends StatelessWidget {
           elevation: 0,
           titleSpacing: 16,
           iconTheme: const IconThemeData(color: Colors.white),
+
           title: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -39,12 +44,6 @@ class DashboardAdmin extends StatelessWidget {
               ),
             ],
           ),
-          actions: const [
-            Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Icon(Icons.menu, color: Colors.white),
-            ),
-          ],
         ),
 
         /// BODY
@@ -96,12 +95,12 @@ class DashboardAdmin extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              /// CHART CARD
+              /// CHART
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF9FB7C3),
+                  color: const Color(0xFFEAF3F7),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -132,7 +131,6 @@ class DashboardAdmin extends StatelessWidget {
                         LineChartData(
                           gridData: FlGridData(show: false),
                           borderData: FlBorderData(show: false),
-
                           titlesData: FlTitlesData(
                             leftTitles: AxisTitles(
                               sideTitles: SideTitles(showTitles: false),
@@ -170,7 +168,6 @@ class DashboardAdmin extends StatelessWidget {
                               ),
                             ),
                           ),
-
                           lineBarsData: [
                             LineChartBarData(
                               isCurved: true,
@@ -208,6 +205,87 @@ class DashboardAdmin extends StatelessWidget {
   }
 }
 
+/// ================= DRAWER =================
+class AdminDrawer extends StatelessWidget {
+  const AdminDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            /// HEADER
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                "NALAR",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                  color: Color(0xFF3A7CA5),
+                ),
+              ),
+            ),
+
+            const Divider(),
+
+            /// MENU
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                children: [
+                  /// ACTIVE
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9FB7C3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.home),
+                      title: const Text("Beranda"),
+                      onTap: () {},
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: const Text("User Profile"),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileAdmin()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const Spacer(),
+
+            /// LOGOUT
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text("Keluar"),
+                onTap: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ================= CARD =================
 class StatCard extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -243,18 +321,13 @@ class StatCard extends StatelessWidget {
             ),
             child: Icon(icon, size: 18),
           ),
-
           const Spacer(),
-
           Text(
             value,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-
           Text(title, style: const TextStyle(fontSize: 11)),
-
           const SizedBox(height: 4),
-
           Text(
             percent,
             style: TextStyle(
