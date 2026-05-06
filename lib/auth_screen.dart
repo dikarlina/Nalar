@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -39,6 +40,18 @@ class _AuthScreenState extends State<AuthScreen> {
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
+  }
+
+  // 🔥 TEST FIREBASE FUNCTION
+  Future<void> testFirebase() async {
+    await FirebaseFirestore.instance.collection('test').add({
+      'nama': emailController.text.isEmpty ? 'Zahra' : emailController.text,
+      'waktu': Timestamp.now(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Data berhasil dikirim ke Firebase 🚀')),
+    );
   }
 
   @override
@@ -140,6 +153,24 @@ class _AuthScreenState extends State<AuthScreen> {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 🔥 TOMBOL TEST FIREBASE
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: ElevatedButton(
+                  onPressed: testFirebase,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                  child: const Text(
+                    "TEST FIREBASE",
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
               ),
