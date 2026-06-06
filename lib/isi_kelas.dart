@@ -1,59 +1,218 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'daftar_tugas.dart';
 import 'anggota_kelas.dart';
 import 'forum_kelas.dart';
 import 'setting_kelas.dart';
 
+import 'create_material.dart';
+import 'create_assignment.dart';
+import 'user_service.dart';
+
 class ClassDetailsScreen extends StatefulWidget {
-  const ClassDetailsScreen({super.key});
+  final String classId;
+  final String className;
+  final String section;
+  final String subject;
+  final String room;
+
+  const ClassDetailsScreen({
+    super.key,
+    required this.classId,
+    required this.className,
+    required this.section,
+    required this.subject,
+    required this.room,
+  });
 
   @override
-  _ClassDetailsScreenState createState() => _ClassDetailsScreenState();
+  State<ClassDetailsScreen> createState() => _ClassDetailsScreenState();
 }
 
 class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
   int _selectedIndex = 0;
+  bool _isGuru = false;
 
-  final List<Map<String, dynamic>> assignments = [
-    {
-      'title': 'Tugas baru: Post-test Integral Tentu',
-      'date': '11 April 2026',
-      'icon': Icons.assignment,
-    },
-    {
-      'title': 'Tugas baru: Pre-test Integral Tentu',
-      'date': '11 April 2026',
-      'icon': Icons.assignment,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _checkRole();
+  }
 
-  final List<Map<String, dynamic>> materials = [
-    {
-      'title': 'Materi baru: Integral Tentu',
-      'date': '11 April 2026',
-      'icon': Icons.library_books,
-    },
-  ];
+  Future<void> _checkRole() async {
+    final result = await UserService.isGuruDiKelas(widget.classId);
+    if (mounted) setState(() => _isGuru = result);
+  }
 
+  CollectionReference get assignmentsRef => FirebaseFirestore.instance
+      .collection('classes')
+      .doc(widget.classId)
+      .collection('assignments');
+
+  CollectionReference get materialsRef => FirebaseFirestore.instance
+      .collection('classes')
+      .doc(widget.classId)
+      .collection('materials');
+
+  // ================= BUKA FILE =================
+  Future<void> _openFile(String url) async {
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Tidak ada file terlampir")));
+      return;
+    }
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Gagal membuka file")));
+      }
+    }
+  }
+
+  // ================= HAPUS ASSIGNMENT =================
+  Future<void> _deleteAssignment(String docId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Hapus Assignment"),
+        content: const Text("Yakin mau hapus assignment ini?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Hapus", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    await assignmentsRef.doc(docId).delete();
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Assignment dihapus")));
+    }
+  }
+
+  // ================= HAPUS MATERIAL =================
+  Future<void> _deleteMaterial(String docId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Hapus Material"),
+        content: const Text("Yakin mau hapus material ini?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Hapus", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    await materialsRef.doc(docId).delete();
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Material dihapus")));
+    }
+  }
+
+  // ================= CREATE ASSIGNMENT =================
+  Future<void> _goCreateAssignment() async {
+    if (!_isGuru) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Hanya guru yang bisa membuat assignment"),
+        ),
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreateAssignmentScreen(classId: widget.classId),
+      ),
+    );
+  }
+
+  // ================= CREATE MATERIAL =================
+  Future<void> _goCreateMaterial() async {
+    if (!_isGuru) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Hanya guru yang bisa upload materi")),
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreateMaterialScreen(classId: widget.classId),
+      ),
+    );
+  }
+
+  // ================= NAVIGATION =================
   void _onItemTapped(int index) {
-    if (index == 0) {
-      setState(() {
-        _selectedIndex = 0;
-      });
-    } else if (index == 1) {
+    if (index == _selectedIndex) return;
+    setState(() => _selectedIndex = index);
+
+    if (index == 1) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => DaftarTugasScreen()),
+        MaterialPageRoute(
+          builder: (_) => DaftarTugasScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
       );
-    } else if (index == 2) {
+    }
+    if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => AnggotaKelasScreen()),
+        MaterialPageRoute(
+          builder: (_) => AnggotaKelasScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
       );
-    } else if (index == 3) {
+    }
+    if (index == 3) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ForumKelasScreen()),
+        MaterialPageRoute(
+          builder: (_) => ForumKelasScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
       );
     }
   }
@@ -61,135 +220,204 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
+
       appBar: AppBar(
-        title: Text('Kalkulus'),
+        title: Text(widget.className),
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () {
-              // Navigate to ClassSettingsScreen when the button is pressed
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ClassSettingsScreen(), // Navigate to the ClassSettingsScreen
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () {
-              // Logic for deleting class
-            },
-          ),
+          if (_isGuru) ...[
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ClassSettingsScreen()),
+                );
+              },
+            ),
+            IconButton(icon: const Icon(Icons.delete), onPressed: () {}),
+          ],
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
+
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Class Information Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Created by Zahra Mufida',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                Text(
-                  'Kalkulus',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-
-            // Buttons for creating material and assignment
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    // Navigate to create material screen
-                  },
-                  child: Text('Create Material'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    // Navigate to create assignment screen
-                  },
-                  child: Text('Create Assignment'),
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-
-            // Assignments Section
-            Text(
-              'Assignments',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: assignments.length,
-                itemBuilder: (context, index) {
-                  final assignment = assignments[index];
-                  return ListTile(
-                    leading: Icon(assignment['icon'], color: Colors.blue),
-                    title: Text(assignment['title']),
-                    subtitle: Text(assignment['date']),
-                    trailing: Icon(Icons.more_vert),
-                    onTap: () {
-                      // Logic for assignment details
-                    },
-                  );
-                },
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(widget.subject),
+                  Text("Room: ${widget.room}"),
+                  Text("Section: ${widget.section}"),
+                ],
               ),
             ),
 
-            // Materials Section
-            Text(
-              'Materials',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: materials.length,
-                itemBuilder: (context, index) {
-                  final material = materials[index];
-                  return ListTile(
-                    leading: Icon(material['icon'], color: Colors.green),
-                    title: Text(material['title']),
-                    subtitle: Text(material['date']),
-                    trailing: Icon(Icons.more_vert),
-                    onTap: () {
-                      // Logic for material details
-                    },
-                  );
-                },
+            const SizedBox(height: 16),
+
+            // tombol create hanya tampil kalau guru
+            if (_isGuru)
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _goCreateMaterial,
+                      child: const Text("Create Material"),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _goCreateAssignment,
+                      child: const Text("Create Assignment"),
+                    ),
+                  ),
+                ],
               ),
+
+            const SizedBox(height: 20),
+
+            // ================= ASSIGNMENTS =================
+            const Text(
+              "Assignments",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+
+            StreamBuilder<QuerySnapshot>(
+              stream: assignmentsRef.snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snapshot.data!.docs;
+                if (docs.isEmpty) {
+                  return const Text(
+                    "Belum ada assignment",
+                    style: TextStyle(color: Colors.grey),
+                  );
+                }
+                return Column(
+                  children: docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final fileUrl = data['fileUrl'] ?? '';
+                    final hasFile = fileUrl.isNotEmpty;
+
+                    return ListTile(
+                      leading: const Icon(Icons.assignment),
+                      title: Text(data['title'] ?? '-'),
+                      subtitle: Text(
+                        "by: ${data['creatorEmail'] ?? 'unknown'}",
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (hasFile)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.picture_as_pdf,
+                                color: Colors.red,
+                              ),
+                              onPressed: () => _openFile(fileUrl),
+                            ),
+                          // tombol hapus hanya untuk guru
+                          if (_isGuru)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () => _deleteAssignment(doc.id),
+                            ),
+                        ],
+                      ),
+                      onTap: hasFile ? () => _openFile(fileUrl) : null,
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // ================= MATERIALS =================
+            const Text(
+              "Materials",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+
+            StreamBuilder<QuerySnapshot>(
+              stream: materialsRef.snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snapshot.data!.docs;
+                if (docs.isEmpty) {
+                  return const Text(
+                    "Belum ada materi",
+                    style: TextStyle(color: Colors.grey),
+                  );
+                }
+                return Column(
+                  children: docs.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final fileUrl = data['fileUrl'] ?? '';
+
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.picture_as_pdf,
+                        color: Colors.red,
+                      ),
+                      title: Text(data['title'] ?? '-'),
+                      subtitle: Text(
+                        "by: ${data['creatorEmail'] ?? 'unknown'}",
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.open_in_new),
+                          if (_isGuru)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () => _deleteMaterial(doc.id),
+                            ),
+                        ],
+                      ),
+                      onTap: () => _openFile(fileUrl),
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ],
         ),
       ),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
-        items: [
+        items: const [
           BottomNavigationBarItem(icon: Icon(Icons.class_), label: 'Kelas'),
           BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Tugas'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Anggota'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.forum),
-            label: 'Forum Kelas',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.forum), label: 'Forum'),
         ],
       ),
     );

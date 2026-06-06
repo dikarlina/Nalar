@@ -1,4 +1,7 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'isi_kelas.dart';
 
 class CreateClassForm extends StatefulWidget {
@@ -10,10 +13,18 @@ class CreateClassForm extends StatefulWidget {
 
 class _CreateClassFormState extends State<CreateClassForm> {
   final _formKey = GlobalKey<FormState>();
+
   final TextEditingController _classNameController = TextEditingController();
   final TextEditingController _sectionController = TextEditingController();
   final TextEditingController _subjekController = TextEditingController();
   final TextEditingController _roomController = TextEditingController();
+
+  // ================= GENERATE KODE KELAS =================
+  String _generateClassCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rand = Random();
+    return List.generate(6, (i) => chars[rand.nextInt(chars.length)]).join();
+  }
 
   @override
   void dispose() {
@@ -24,16 +35,53 @@ class _CreateClassFormState extends State<CreateClassForm> {
     super.dispose();
   }
 
-  void _handleCreate() {
+  Future<void> _handleCreate() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ClassDetailsScreen()),
-      );
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) throw Exception("User belum login");
+
+        final classCode = _generateClassCode();
+
+        DocumentReference docRef = await FirebaseFirestore.instance
+            .collection('classes')
+            .add({
+              'className': _classNameController.text.trim(),
+              'section': _sectionController.text.trim(),
+              'subject': _subjekController.text.trim(),
+              'room': _roomController.text.trim(),
+              'createdAt': Timestamp.now(),
+              'createdBy': user.uid,        // ← penting buat cek guru
+              'classCode': classCode,        // ← buat join kelas
+            });
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kelas berhasil dibuat! Kode: $classCode')),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ClassDetailsScreen(
+              classId: docRef.id,
+              className: _classNameController.text.trim(),
+              section: _sectionController.text.trim(),
+              subject: _subjekController.text.trim(),
+              room: _roomController.text.trim(),
+            ),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuat kelas: $e')),
+        );
+      }
     }
   }
 
-  // ================= INPUT FIELD WIDGET =================
   Widget _buildField({
     required String label,
     required TextEditingController controller,
@@ -71,7 +119,7 @@ class _CreateClassFormState extends State<CreateClassForm> {
           validator: validator,
           decoration: InputDecoration(
             hintText: 'Type here',
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 20,
               vertical: 14,
@@ -101,7 +149,6 @@ class _CreateClassFormState extends State<CreateClassForm> {
     );
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,7 +173,6 @@ class _CreateClassFormState extends State<CreateClassForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Class Name
               _buildField(
                 label: 'Class name',
                 controller: _classNameController,
@@ -138,25 +184,14 @@ class _CreateClassFormState extends State<CreateClassForm> {
                   return null;
                 },
               ),
-
               const SizedBox(height: 20),
-
-              // Section
               _buildField(label: 'Section', controller: _sectionController),
-
               const SizedBox(height: 20),
-
-              // Subjek
               _buildField(label: 'Subjek', controller: _subjekController),
-
               const SizedBox(height: 20),
-
-              // Room
               _buildField(label: 'Room', controller: _roomController),
-
               const SizedBox(height: 36),
 
-              // Tombol Create
               SizedBox(
                 width: double.infinity,
                 height: 52,

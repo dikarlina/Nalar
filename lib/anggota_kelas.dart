@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'isi_kelas.dart';
 import 'daftar_tugas.dart';
 import 'forum_kelas.dart';
-import 'progres_siswa.dart'; // import ProgresSiswaScreen
 
 const Color kBlue = Color(0xFF327BA1);
 
 class AnggotaKelasScreen extends StatefulWidget {
-  const AnggotaKelasScreen({super.key});
+  final String classId;
+  final String className;
+  final String section;
+  final String subject;
+  final String room;
+
+  const AnggotaKelasScreen({
+    super.key,
+    required this.classId,
+    required this.className,
+    required this.section,
+    required this.subject,
+    required this.room,
+  });
 
   @override
   State<AnggotaKelasScreen> createState() => _AnggotaKelasScreenState();
@@ -16,125 +30,116 @@ class AnggotaKelasScreen extends StatefulWidget {
 class _AnggotaKelasScreenState extends State<AnggotaKelasScreen> {
   int _selectedIndex = 2;
 
-  final List<Map<String, String>> _members = [
-    {
-      'name': 'Andi Setiawan',
-      'joined': 'Joined Since: Oktober 2025',
-      'initials': 'AS',
-      'gender': 'male',
-    },
-    {
-      'name': 'Florecita Zulfa',
-      'joined': 'Joined Since: Oktober 2025',
-      'initials': 'FZ',
-      'gender': 'female',
-    },
-    {
-      'name': 'Fernanda Dwi',
-      'joined': 'Joined Since: Oktober 2025',
-      'initials': 'FD',
-      'gender': 'male',
-    },
-  ];
+  CollectionReference get membersRef => FirebaseFirestore.instance
+      .collection('classes')
+      .doc(widget.classId)
+      .collection('members');
 
   void _onItemTapped(int index) {
-    if (index == 2) {
-      setState(() => _selectedIndex = 2);
-      return;
-    }
-    setState(() => _selectedIndex = index);
+    if (index == _selectedIndex) return;
+
     if (index == 0) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const ClassDetailsScreen()),
-      );
-    } else if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const DaftarTugasScreen()),
-      );
-    } else if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ForumKelasScreen()),
+        MaterialPageRoute(
+          builder: (_) => ClassDetailsScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
       );
     }
+
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DaftarTugasScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
+      );
+    }
+
+    if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ForumKelasScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
+      );
+    }
+
+    setState(() => _selectedIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Class Member',
-          style: TextStyle(
+        title: Text(
+          widget.className,
+          style: const TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
-            fontSize: 18,
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(color: Colors.grey.shade300, height: 1),
-        ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        itemCount: _members.length,
-        itemBuilder: (context, index) {
-          final member = _members[index];
-          return _MemberTile(
-            name: member['name']!,
-            joined: member['joined']!,
-            initials: member['initials']!,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProgresSiswaScreen(),
-                ),
+
+      body: StreamBuilder<QuerySnapshot>(
+        stream: membersRef.snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data!.docs;
+
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+
+              return _MemberTile(
+                name: data['name'] ?? '-',
+                joined: data['joined'] ?? '-',
+                initials: data['initials'] ?? '--',
+                onTap: () {},
               );
             },
           );
         },
       ),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: kBlue,
         unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_outlined),
-            activeIcon: Icon(Icons.menu_book),
-            label: 'Material',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment),
-            label: 'Assignment',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Members',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: 'Meetings',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.class_), label: 'Kelas'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Tugas'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Anggota'),
+          BottomNavigationBarItem(icon: Icon(Icons.forum), label: 'Forum'),
         ],
       ),
     );
@@ -170,7 +175,6 @@ class _MemberTile extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.blue,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
                 ),
               ),
             ),
@@ -181,20 +185,16 @@ class _MemberTile extends StatelessWidget {
                 Text(
                   name,
                   style: const TextStyle(
-                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Colors.blue,
                   ),
                 ),
-                const SizedBox(height: 3),
                 Text(
                   joined,
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
-            const Spacer(),
-            const Icon(Icons.chevron_right, color: Colors.grey),
           ],
         ),
       ),

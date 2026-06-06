@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'isi_kelas.dart';
 
 // Warna utama
 const Color kBlue = Color(0xFF327BA1);
@@ -33,11 +34,7 @@ class _ClassSettingsScreenState extends State<ClassSettingsScreen> {
 
   void _onSave() {
     if (_formKey.currentState!.validate()) {
-      // Navigasi kembali ke ClassDetailsScreen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ClassDetailsScreen()),
-      );
+      Navigator.pop(context);
     }
   }
 
@@ -346,28 +343,6 @@ class _ClassSettingsScreenState extends State<ClassSettingsScreen> {
           borderRadius: BorderRadius.circular(30),
           borderSide: const BorderSide(color: kRed),
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// Placeholder ClassDetailsScreen
-// Ganti ini dengan implementasi aslimu
-// ─────────────────────────────────────────────
-class ClassDetailsScreen extends StatelessWidget {
-  const ClassDetailsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Class Details'),
-        backgroundColor: Color(0xFF327BA1),
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Text('Class Details Screen', style: TextStyle(fontSize: 18)),
       ),
     );
   }

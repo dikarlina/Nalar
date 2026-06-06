@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'home_screen.dart';
 import 'dashboard_admin.dart';
 
@@ -13,6 +15,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool isLoginMode = true;
   bool isEmailEntered = false;
+  bool isLoading = false;
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -21,48 +24,117 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() {
       isLoginMode = !isLoginMode;
       isEmailEntered = false;
+
       emailController.clear();
       passwordController.clear();
     });
   }
 
-  void handleAction() {
+  Future<void> handleAction() async {
     if (!isEmailEntered) {
       if (emailController.text.contains('@')) {
-        setState(() => isEmailEntered = true);
+        setState(() {
+          isEmailEntered = true;
+        });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid email')),
+          const SnackBar(
+            content: Text("Please enter a valid email"),
+          ),
         );
       }
-    } else {
-      final email = emailController.text.trim();
-
-      // cek admin
-      if (email == "mauvesagara@gmail.com") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardAdmin()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      }
+      return;
     }
-  }
 
-  // 🔥 TEST FIREBASE FUNCTION
-  Future<void> testFirebase() async {
-    await FirebaseFirestore.instance.collection('test').add({
-      'nama': emailController.text.isEmpty ? 'Zahra' : emailController.text,
-      'waktu': Timestamp.now(),
+    if (passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password wajib diisi"),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data berhasil dikirim ke Firebase 🚀')),
-    );
+    try {
+      if (isLoginMode) {
+        // LOGIN
+        UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+
+        String email = userCredential.user?.email ?? "";
+
+        if (email == "mauvesagara@gmail.com") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const DashboardAdmin(),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const HomeScreen(),
+            ),
+          );
+        }
+      } else {
+        // REGISTER
+        UserCredential userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set({
+          'email': emailController.text.trim(),
+          'role': 'user',
+          'createdAt': Timestamp.now(),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Akun berhasil dibuat"),
+          ),
+        );
+
+        setState(() {
+          isLoginMode = true;
+          isEmailEntered = false;
+          passwordController.clear();
+        });
+      }
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? "Authentication Error"),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<void> logout() async {
+    await FirebaseAuth.instance.signOut();
   }
 
   @override
@@ -90,7 +162,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
               SizedBox(height: screenHeight * 0.03),
 
-              Image.asset('assets/logo1.png', height: screenHeight * 0.2),
+              Image.asset(
+                'assets/logo1.png',
+                height: screenHeight * 0.2,
+              ),
 
               SizedBox(height: screenHeight * 0.03),
 
@@ -108,7 +183,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 isLoginMode
                     ? 'Enter your email to login'
                     : 'Enter your email to sign up',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 13,
+                ),
               ),
 
               const SizedBox(height: 25),
@@ -119,7 +197,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 decoration: InputDecoration(
                   hintText: 'email@domain.com',
                   filled: true,
-                  fillColor: isEmailEntered ? Colors.grey[100] : Colors.white,
+                  fillColor:
+                      isEmailEntered ? Colors.grey[100] : Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -146,45 +225,38 @@ class _AuthScreenState extends State<AuthScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: handleAction,
+                  onPressed: isLoading ? null : handleAction,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF327CA0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text(
-                    isEmailEntered
-                        ? (isLoginMode ? 'Login' : 'Sign Up')
-                        : 'Continue',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // 🔥 TOMBOL TEST FIREBASE
-              SizedBox(
-                width: double.infinity,
-                height: 45,
-                child: ElevatedButton(
-                  onPressed: testFirebase,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                  ),
-                  child: const Text(
-                    "TEST FIREBASE",
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : Text(
+                          isEmailEntered
+                              ? (isLoginMode
+                                  ? 'Login'
+                                  : 'Sign Up')
+                              : 'Continue',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
 
               const SizedBox(height: 15),
-              const Text("or", style: TextStyle(color: Colors.grey)),
+
+              const Text(
+                "or",
+                style: TextStyle(color: Colors.grey),
+              ),
+
               const SizedBox(height: 15),
 
               SizedBox(
@@ -192,10 +264,15 @@ class _AuthScreenState extends State<AuthScreen> {
                 height: 50,
                 child: OutlinedButton.icon(
                   onPressed: () {},
-                  icon: Image.asset('assets/google.png', height: 20),
+                  icon: Image.asset(
+                    'assets/google.png',
+                    height: 20,
+                  ),
                   label: const Text(
                     'Continue with Google',
-                    style: TextStyle(color: Colors.black87),
+                    style: TextStyle(
+                      color: Colors.black87,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     backgroundColor: const Color(0xFFF5F5F5),
@@ -213,7 +290,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 onTap: toggleMode,
                 child: RichText(
                   text: TextSpan(
-                    style: const TextStyle(color: Colors.black, fontSize: 13),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 13,
+                    ),
                     children: [
                       TextSpan(
                         text: isLoginMode
@@ -221,7 +301,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             : "Already have an account? ",
                       ),
                       TextSpan(
-                        text: isLoginMode ? "Sign Up" : "Login",
+                        text: isLoginMode
+                            ? "Sign Up"
+                            : "Login",
                         style: const TextStyle(
                           color: Color(0xFF327CA0),
                           fontWeight: FontWeight.bold,
@@ -231,6 +313,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 20),
             ],
           ),

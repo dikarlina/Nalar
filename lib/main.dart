@@ -1,44 +1,31 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'firebase_options.dart';
+import 'auth_screen.dart';
 
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key, required this.title});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  final String title;
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  Future<List<Map<String, dynamic>>> getUsers() async {
-    var snapshot = await FirebaseFirestore.instance.collection('users').get();
+  await Supabase.initialize(
+    url: 'https://bxqycvzutmloiuszdrtx.supabase.co',
+    anonKey: 'sb_publishable_6B1xzgl5KURFpQinkntgkw_OT8Hh1kN',
+  );
 
-    return snapshot.docs.map((e) => e.data()).toList();
-  }
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: FutureBuilder(
-        future: getUsers(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          var data = snapshot.data as List<Map<String, dynamic>>;
-
-          if (data.isEmpty) {
-            return const Center(child: Text("Data kosong"));
-          }
-
-          return ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(data[index]['name'] ?? 'No Name'),
-                subtitle: Text("Age: ${data[index]['age'] ?? '-'}"),
-              );
-            },
-          );
-        },
-      ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'NALAR',
+      home: const AuthScreen(),
     );
   }
 }

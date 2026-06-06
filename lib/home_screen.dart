@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_screen.dart';
 import 'isi_kelas.dart';
 import 'create_class_form.dart';
+import 'join_class.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,40 +14,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // ================= STATE =================
   String selectedMenu = "beranda";
+  final String? currentUid = FirebaseAuth.instance.currentUser?.uid;
 
-  final List<Map<String, dynamic>> classes = [
-    {'title': 'Kalkulus', 'isTaught': true, 'hasTask': true},
-    {'title': 'Biologi', 'isTaught': false, 'hasTask': true},
-    {'title': 'Fisika', 'isTaught': true, 'hasTask': false},
-    {'title': 'Aljabar', 'isTaught': false, 'hasTask': false},
-  ];
-
-  // ================= FILTER =================
-  List<Map<String, dynamic>> getFilteredClasses() {
-    if (selectedMenu == "beranda") {
-      return classes;
-    } else if (selectedMenu == "diperiksa") {
-      return classes.where((c) => c['isTaught'] == true).toList();
-    } else if (selectedMenu == "tugas") {
-      return classes.where((c) => c['hasTask'] == true).toList();
-    }
-    return classes;
-  }
-
-  // ================= COLOR GENERATOR =================
   Color getColor(String title) {
     final colors = [
-      Color(0xFF327CA0),
-      Color(0xFF327CA0),
-      Color(0xFF327CA0),
-      Color(0xFF327CA0),
+      const Color(0xFF327CA0),
+      const Color(0xFF327CA0),
+      const Color(0xFF327CA0),
+      const Color(0xFF327CA0),
     ];
     return colors[title.length % colors.length];
   }
 
-  // ================= ICON GENERATOR =================
   IconData getIcon(int index) {
     final icons = [
       Icons.calculate,
@@ -55,11 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return icons[index % icons.length];
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
-    final filteredClasses = getFilteredClasses();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -72,24 +51,43 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      // ================= FAB =================
-      floatingActionButton: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: Color(0xFF327CA0), width: 2.5),
-        ),
-        child: IconButton(
-          icon: const Icon(Icons.add, color: Color(0xFF327CA0), size: 30),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => CreateClassForm()),
-            );
-          },
-        ),
+      // ================= FAB: create + join =================
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // join class
+          FloatingActionButton.small(
+            heroTag: "join",
+            backgroundColor: Colors.white,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const JoinClassScreen()),
+              );
+            },
+            child: const Icon(Icons.login, color: Color(0xFF327CA0)),
+          ),
+          const SizedBox(height: 8),
+          // create class
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF327CA0), width: 2.5),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.add, color: Color(0xFF327CA0), size: 30),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateClassForm()),
+                );
+              },
+            ),
+          ),
+        ],
       ),
 
       // ================= DRAWER =================
@@ -109,66 +107,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
-            // Beranda
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text("Beranda"),
               selected: selectedMenu == "beranda",
               selectedColor: const Color(0xFF327CA0),
-              iconColor: Colors.black,
               onTap: () {
                 setState(() => selectedMenu = "beranda");
                 Navigator.pop(context);
               },
             ),
-
-            // Mengajar
-            ExpansionTile(
-              leading: const Icon(Icons.people),
-              title: const Text("Mengajar"),
-              children: [
-                ListTile(
-                  title: const Text("Untuk Diperiksa"),
-                  selectedColor: const Color(0xFF327CA0),
-                  iconColor: Colors.black,
-                  onTap: () {
-                    setState(() => selectedMenu = "diperiksa");
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-
-            // Terdaftar
-            ExpansionTile(
-              leading: const Icon(Icons.book),
-              title: const Text("Terdaftar"),
-              children: [
-                ListTile(
-                  title: const Text("Tugas Saya"),
-                  selectedColor: const Color(0xFF327CA0),
-                  iconColor: Colors.black,
-                  onTap: () {
-                    setState(() => selectedMenu = "tugas");
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-
-            const Spacer(),
-
             ListTile(
-              leading: const Icon(
-                Icons.logout,
-                color: Color.fromARGB(255, 184, 12, 0),
-              ),
+              leading: const Icon(Icons.login),
+              title: const Text("Join Kelas"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const JoinClassScreen()),
+                );
+              },
+            ),
+            const Spacer(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Keluar'),
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const AuthScreen()),
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
                   (route) => false,
                 );
               },
@@ -187,10 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
               "Kelas Saya",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 15),
-
-            // Search
             TextField(
               decoration: InputDecoration(
                 hintText: "Search",
@@ -200,60 +164,115 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // LIST KELAS
             Expanded(
-              child: ListView.builder(
-                itemCount: filteredClasses.length,
-                itemBuilder: (context, index) {
-                  final item = filteredClasses[index];
+              child: StreamBuilder<QuerySnapshot>(
+                // tampilkan kelas yang dibuat user ATAU kelas yang di-join user
+                stream: FirebaseFirestore.instance
+                    .collection('classes')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text("Belum ada kelas"));
+                  }
 
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ClassDetailsScreen(),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      height: 130,
-                      decoration: BoxDecoration(
-                        color: getColor(item['title']),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Stack(
-                        children: [
-                          // Judul
-                          Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Text(
-                              item['title'],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                  // filter: hanya tampilkan kelas yang dibuat atau di-join user
+                  final allClasses = snapshot.data!.docs;
+
+                  return FutureBuilder<List<QueryDocumentSnapshot>>(
+                    future: _filterMyClasses(allClasses),
+                    builder: (context, filtered) {
+                      if (!filtered.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final classes = filtered.data!;
+
+                      if (classes.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "Belum ada kelas.\nBuat kelas baru atau join dengan kode!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        itemCount: classes.length,
+                        itemBuilder: (context, index) {
+                          final data = classes[index].data() as Map<String, dynamic>;
+
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ClassDetailsScreen(
+                                    classId: classes[index].id,
+                                    className: data['className'] ?? '',
+                                    section: data['section'] ?? '',
+                                    subject: data['subject'] ?? '',
+                                    room: data['room'] ?? '',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 20),
+                              height: 130,
+                              decoration: BoxDecoration(
+                                color: getColor(data['className'] ?? ''),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Stack(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          data['className'] ?? 'No Name',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        // tampilkan kode kelas
+                                        if (data['classCode'] != null)
+                                          Text(
+                                            "Kode: ${data['classCode']}",
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  Positioned(
+                                    right: 20,
+                                    bottom: 20,
+                                    child: Icon(
+                                      getIcon(index),
+                                      size: 50,
+                                      color: Colors.white.withOpacity(0.8),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-
-                          // Icon kanan bawah
-                          Positioned(
-                            right: 20,
-                            bottom: 20,
-                            child: Icon(
-                              getIcon(index),
-                              size: 50,
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                          );
+                        },
+                      );
+                    },
                   );
                 },
               ),
@@ -262,5 +281,34 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  // filter kelas: yang dibuat sendiri ATAU sudah join
+  Future<List<QueryDocumentSnapshot>> _filterMyClasses(
+    List<QueryDocumentSnapshot> allClasses,
+  ) async {
+    final result = <QueryDocumentSnapshot>[];
+
+    for (final doc in allClasses) {
+      final data = doc.data() as Map<String, dynamic>;
+
+      // kelas yang dibuat sendiri
+      if (data['createdBy'] == currentUid) {
+        result.add(doc);
+        continue;
+      }
+
+      // kelas yang sudah di-join
+      final memberDoc = await doc.reference
+          .collection('members')
+          .doc(currentUid)
+          .get();
+
+      if (memberDoc.exists) {
+        result.add(doc);
+      }
+    }
+
+    return result;
   }
 }

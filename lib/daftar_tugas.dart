@@ -1,42 +1,98 @@
 import 'package:flutter/material.dart';
-import 'isi_kelas.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'anggota_kelas.dart';
 import 'forum_kelas.dart';
+import 'isi_kelas.dart';
+import 'submit_assignment.dart';
 
 class DaftarTugasScreen extends StatefulWidget {
-  const DaftarTugasScreen({super.key});
+  final String classId;
+  final String className;
+  final String section;
+  final String subject;
+  final String room;
+
+  const DaftarTugasScreen({
+    super.key,
+    required this.classId,
+    required this.className,
+    required this.section,
+    required this.subject,
+    required this.room,
+  });
 
   @override
-  _DaftarTugasScreenState createState() => _DaftarTugasScreenState();
+  State<DaftarTugasScreen> createState() => _DaftarTugasScreenState();
 }
 
 class _DaftarTugasScreenState extends State<DaftarTugasScreen> {
   int _selectedIndex = 1;
+  final String? currentUid = FirebaseAuth.instance.currentUser?.uid;
 
-  final List<Map<String, dynamic>> assignments = [
-    {'title': 'Tugas baru: Post-test Integral Tentu', 'date': '11 April 2026'},
-    {'title': 'Tugas baru: Pre-test Integral Tentu', 'date': '11 April 2026'},
-  ];
+  CollectionReference get assignmentsRef => FirebaseFirestore.instance
+      .collection('classes')
+      .doc(widget.classId)
+      .collection('assignments');
 
+  // ================= BUKA FILE =================
+  Future<void> _openFile(String url) async {
+    if (url.isEmpty) return;
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  // ================= NAVIGATION =================
   void _onItemTapped(int index) {
-    if (index == 1) {
-      setState(() {
-        _selectedIndex = 1;
-      });
-    } else if (index == 0) {
+    if (index == _selectedIndex) return;
+    setState(() => _selectedIndex = index);
+
+    if (index == 0) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ClassDetailsScreen()),
+        MaterialPageRoute(
+          builder: (_) => ClassDetailsScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
       );
-    } else if (index == 2) {
+    }
+
+    if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => AnggotaKelasScreen()),
+        MaterialPageRoute(
+          builder: (_) => AnggotaKelasScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
       );
-    } else if (index == 3) {
+    }
+
+    if (index == 3) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => ForumKelasScreen()),
+        MaterialPageRoute(
+          builder: (_) => ForumKelasScreen(
+            classId: widget.classId,
+            className: widget.className,
+            section: widget.section,
+            subject: widget.subject,
+            room: widget.room,
+          ),
+        ),
       );
     }
   }
@@ -44,122 +100,162 @@ class _DaftarTugasScreenState extends State<DaftarTugasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Kalkulus',
-          style: TextStyle(
-            color: Color(0xFF327BA1),
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text("Tugas - ${widget.className}"),
+        centerTitle: true,
       ),
-      body: assignments.isEmpty
-          ? Center(
+
+      body: StreamBuilder<QuerySnapshot>(
+        stream: assignmentsRef
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data!.docs;
+
+          if (docs.isEmpty) {
+            return const Center(
               child: Text(
-                'Belum ada tugas.',
+                "Belum ada tugas",
                 style: TextStyle(color: Colors.grey),
               ),
-            )
-          : ListView.separated(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: assignments.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final assignment = assignments[index];
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+              final fileUrl = data['fileUrl'] ?? '';
+              final deadline = data['deadline'];
+              String deadlineStr = '-';
+              if (deadline != null && deadline is Timestamp) {
+                final d = deadline.toDate();
+                deadlineStr = '${d.day}/${d.month}/${d.year}';
+              }
+
+              // cek apakah sudah submit
+              return FutureBuilder<DocumentSnapshot>(
+                future: assignmentsRef
+                    .doc(doc.id)
+                    .collection('submissions')
+                    .doc(currentUid)
+                    .get(),
+                builder: (context, subSnap) {
+                  final sudahSubmit = subSnap.hasData && subSnap.data!.exists;
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(12),
+                      leading: const Icon(
+                        Icons.assignment,
+                        color: Colors.blue,
+                        size: 32,
+                      ),
+                      title: Text(
+                        data['title'] ?? '-',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Deadline: $deadlineStr"),
+                          Text("Score: ${data['score'] ?? '-'}"),
+                          const SizedBox(height: 4),
+                          // status submit
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: sudahSubmit
+                                  ? Colors.green.shade100
+                                  : Colors.orange.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              sudahSubmit
+                                  ? "✓ Sudah dikumpulkan"
+                                  : "Belum dikumpulkan",
+                              style: TextStyle(
+                                color: sudahSubmit
+                                    ? Colors.green
+                                    : Colors.orange,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // tombol buka soal PDF
+                          if (fileUrl.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.picture_as_pdf,
+                                color: Colors.red,
+                              ),
+                              tooltip: "Lihat Soal",
+                              onPressed: () => _openFile(fileUrl),
+                            ),
+                          // tombol submit
+                          IconButton(
+                            icon: Icon(
+                              sudahSubmit
+                                  ? Icons.check_circle
+                                  : Icons.upload_file,
+                              color: sudahSubmit ? Colors.green : Colors.blue,
+                            ),
+                            tooltip: sudahSubmit
+                                ? "Sudah Submit"
+                                : "Submit Tugas",
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SubmitAssignmentScreen(
+                                    classId: widget.classId,
+                                    assignmentId: doc.id,
+                                    assignmentTitle: data['title'] ?? '-',
+                                    sudahSubmit: sudahSubmit,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Icon(Icons.assignment, color: Colors.grey),
-                  ),
-                  title: Text(
-                    assignment['title'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: Text(
-                    assignment['date'],
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.more_vert, color: Colors.grey),
-                    onPressed: () {
-                      _showOptionsMenu(context, index);
-                    },
-                  ),
-                  onTap: () {
-                    // Logic untuk detail tugas
-                  },
-                );
-              },
-            ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Color(0xFF327BA1),
+        selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        items: [
+        items: const [
           BottomNavigationBarItem(icon: Icon(Icons.class_), label: 'Kelas'),
           BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Tugas'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Anggota'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.forum),
-            label: 'Forum Kelas',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.forum), label: 'Forum'),
         ],
       ),
-    );
-  }
-
-  void _showOptionsMenu(BuildContext context, int index) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.edit, color: Color(0xFF327BA1)),
-                title: Text('Edit Tugas'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Logic edit tugas
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.delete, color: Colors.red),
-                title: Text('Hapus Tugas'),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    assignments.removeAt(index);
-                  });
-                },
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
