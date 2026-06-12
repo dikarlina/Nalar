@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
-import 'isi_kelas.dart';
+import 'constants.dart';
+import 'home_screen.dart';
 
-// Warna utama
-const Color kBlue = Color(0xFF327BA1);
-const Color kRed = Color(0xFFF24144);
 
 class ClassSettingsScreen extends StatefulWidget {
-  const ClassSettingsScreen({super.key});
+  final String classId;
+  final String className;
+  final String section;
+  final String subject;
+  final String room;
+
+  const ClassSettingsScreen({
+    super.key,
+    required this.classId,
+    required this.className,
+    required this.section,
+    required this.subject,
+    required this.room,
+  });
 
   @override
   State<ClassSettingsScreen> createState() => _ClassSettingsScreenState();
@@ -14,13 +25,20 @@ class ClassSettingsScreen extends StatefulWidget {
 
 class _ClassSettingsScreenState extends State<ClassSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _classNameController = TextEditingController();
-  final _sectionController = TextEditingController();
-  final _subjectController = TextEditingController();
-  final _roomController = TextEditingController();
-  final _emailController = TextEditingController();
+  late final TextEditingController _classNameController;
+  late final TextEditingController _sectionController;
+  late final TextEditingController _subjectController;
+  late final TextEditingController _roomController;
+  final TextEditingController _emailController = TextEditingController();
 
-  final String _createdDate = 'Oct 1, 2025, 09.31.';
+  @override
+  void initState() {
+    super.initState();
+    _classNameController = TextEditingController(text: widget.className);
+    _sectionController = TextEditingController(text: widget.section);
+    _subjectController = TextEditingController(text: widget.subject);
+    _roomController = TextEditingController(text: widget.room);
+  }
 
   @override
   void dispose() {
@@ -34,6 +52,15 @@ class _ClassSettingsScreenState extends State<ClassSettingsScreen> {
 
   void _onSave() {
     if (_formKey.currentState!.validate()) {
+      // TODO: simpan ke Firestore
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Perubahan disimpan'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          backgroundColor: kBlue,
+        ),
+      );
       Navigator.pop(context);
     }
   }
@@ -41,25 +68,98 @@ class _ClassSettingsScreenState extends State<ClassSettingsScreen> {
   void _onDeleteClass() {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Class'),
-        content: const Text(
-          'Are you sure you want to delete this class? This action cannot be undone.',
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: kRed.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.delete_outline, color: kRed, size: 22),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Hapus Kelas?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A2D3D),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Yakin ingin menghapus kelas ini? Seluruh data kelas termasuk materi, tugas, dan anggota akan terhapus permanen dan tidak bisa dikembalikan.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1A2D3D),
+                        side: const BorderSide(color: kBorder),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        // TODO: logika hapus kelas di Firestore
+                        // Kembali ke HomeScreen setelah hapus
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const HomeScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kRed,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      child: const Text(
+                        'Hapus',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              // TODO: Tambahkan logika hapus kelas di sini
-            },
-            style: TextButton.styleFrom(foregroundColor: kRed),
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }
@@ -67,248 +167,217 @@ class _ClassSettingsScreenState extends State<ClassSettingsScreen> {
   void _onAddEmail() {
     final email = _emailController.text.trim();
     if (email.isNotEmpty) {
-      // TODO: Tambahkan logika invite email di sini
+      // TODO: logika invite email
       _emailController.clear();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Invitation sent to $email')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Undangan dikirim ke $email'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          backgroundColor: kBlue,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                const SizedBox(height: 12),
-                Center(
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Class Settings',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Created on $_createdDate',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 1,
+        shadowColor: Colors.black12,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          color: const Color(0xFF1A2D3D),
+          onPressed: () => Navigator.pop(context),
+        ),
+        centerTitle: true,
+        title: const Text(
+          'Pengaturan Kelas',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A2D3D),
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: kBorder),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Section: Detail Kelas ─────────────────────────────────────
+              _SectionCard(
+                title: 'Detail Kelas',
+                children: [
+                  _FieldItem(
+                    label: 'Nama Kelas',
+                    required: true,
+                    child: _buildTextField(
+                      controller: _classNameController,
+                      hint: 'Masukkan nama kelas',
+                      validator: (val) =>
+                          (val == null || val.isEmpty) ? 'Nama kelas wajib diisi' : null,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 28),
-
-                // Class Details Section
-                const Text(
-                  'Class Details',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                  _FieldItem(
+                    label: 'Seksi',
+                    child: _buildTextField(
+                      controller: _sectionController,
+                      hint: 'Contoh: A, B, 2024',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-
-                // Class Name
-                _buildLabel('Class name', required: true),
-                const SizedBox(height: 6),
-                _buildTextField(
-                  controller: _classNameController,
-                  hint: 'Type here',
-                  validator: (val) => (val == null || val.isEmpty)
-                      ? 'Class name is required'
-                      : null,
-                ),
-                const SizedBox(height: 14),
-
-                // Section
-                _buildLabel('Section'),
-                const SizedBox(height: 6),
-                _buildTextField(
-                  controller: _sectionController,
-                  hint: 'Type here',
-                ),
-                const SizedBox(height: 14),
-
-                // Subjek
-                _buildLabel('Subjek'),
-                const SizedBox(height: 6),
-                _buildTextField(
-                  controller: _subjectController,
-                  hint: 'Type here',
-                ),
-                const SizedBox(height: 14),
-
-                // Room
-                _buildLabel('Room'),
-                const SizedBox(height: 6),
-                _buildTextField(controller: _roomController, hint: 'Type here'),
-                const SizedBox(height: 28),
-
-                // Class Invitation Section
-                const Text(
-                  'Class Invitation',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                  _FieldItem(
+                    label: 'Mata Pelajaran',
+                    child: _buildTextField(
+                      controller: _subjectController,
+                      hint: 'Contoh: Matematika',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Add Manually',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: kBlue,
+                  _FieldItem(
+                    label: 'Ruangan',
+                    last: true,
+                    child: _buildTextField(
+                      controller: _roomController,
+                      hint: 'Contoh: Lab 3',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
+                ],
+              ),
 
-                // Email Input
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          hintText: 'email@domain.com',
-                          hintStyle: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFCCCCCC),
+              const SizedBox(height: 16),
+
+              // ── Section: Undangan ─────────────────────────────────────────
+              _SectionCard(
+                title: 'Undang Anggota',
+                subtitle: 'Kirim undangan lewat email',
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF1A2D3D),
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'email@domain.com',
+                              hintStyle: const TextStyle(
+                                color: Color(0xFFB0BEC5),
+                                fontSize: 14,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 13,
+                              ),
+                              filled: true,
+                              fillColor: kBg,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: kBorder),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: kBorder),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: kBlue, width: 1.5),
+                              ),
                             ),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFCCCCCC),
+                        ),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: _onAddEmail,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: kBlue,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide(color: kBlue, width: 1.5),
+                            child: const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 18),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: _onAddEmail,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: kBlue, width: 2),
-                        ),
-                        child: Icon(Icons.add, color: kBlue, size: 20),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
+                  ),
+                ],
+              ),
 
-                // Save Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _onSave,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kBlue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 0,
+              const SizedBox(height: 28),
+
+              // ── Save Button ───────────────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _onSave,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  ),
+                  child: const Text(
+                    'Simpan Perubahan',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+              ),
 
-                // Delete Class Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _onDeleteClass,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kRed,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 0,
+              const SizedBox(height: 12),
+
+              // ── Delete Button ─────────────────────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: _onDeleteClass,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text(
+                    'Hapus Kelas',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
-                    child: const Text(
-                      'Delete Class',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kRed,
+                    side: const BorderSide(color: kRed),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 32),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildLabel(String text, {bool required = false}) {
-    return Row(
-      children: [
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: kBlue,
-          ),
-        ),
-        if (required) ...[
-          const SizedBox(width: 4),
-          Text(
-            '(required)',
-            style: TextStyle(fontSize: 13, color: kBlue.withOpacity(0.7)),
-          ),
-        ],
-      ],
     );
   }
 
@@ -320,30 +389,152 @@ class _ClassSettingsScreenState extends State<ClassSettingsScreen> {
     return TextFormField(
       controller: controller,
       validator: validator,
+      style: const TextStyle(fontSize: 14, color: Color(0xFF1A2D3D)),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
+        hintStyle: const TextStyle(color: Color(0xFFB0BEC5), fontSize: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        filled: true,
+        fillColor: kBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Color(0xFFCCCCCC)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: kBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Color(0xFFCCCCCC)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: kBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: kBlue, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: kBlue, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: kRed),
         ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: kRed, width: 1.5),
+        ),
       ),
+    );
+  }
+}
+
+// ─── Reusable Section Card ────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final List<Widget> children;
+
+  const _SectionCard({
+    required this.title,
+    this.subtitle,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A2D3D),
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF8FA3B0),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: kBorder),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Field Item ───────────────────────────────────────────────────────────────
+
+class _FieldItem extends StatelessWidget {
+  final String label;
+  final bool required;
+  final bool last;
+  final Widget child;
+
+  const _FieldItem({
+    required this.label,
+    this.required = false,
+    this.last = false,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+          child: Row(
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF8FA3B0),
+                  letterSpacing: 0.3,
+                ),
+              ),
+              if (required) ...[
+                const SizedBox(width: 4),
+                const Text(
+                  '*',
+                  style: TextStyle(color: kRed, fontSize: 13),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: child,
+        ),
+        if (!last) const Divider(height: 1, color: kBorder),
+      ],
     );
   }
 }
