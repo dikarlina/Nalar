@@ -1,10 +1,148 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:our_app/profile_admin.dart';
 
-class DashboardAdmin extends StatelessWidget {
+class DashboardAdmin extends StatefulWidget {
   const DashboardAdmin({super.key});
+
+  @override
+  State<DashboardAdmin> createState() => _DashboardAdminState();
+}
+
+class _DashboardAdminState extends State<DashboardAdmin> {
+  int totalPengguna = 0;
+  int penggunaAktif = 0;
+  int login30Hari = 0;
+  int totalKelas = 0;
+  String adminName = "Loading...";
+  String adminRole = "Loading...";
+
+  List<FlSpot> growthSpots = [];
+  List<String> growthLabels = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadAdminData();
+    loadDashboardData();
+  }
+
+  Future<void> loadAdminData() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (doc.exists) {
+        setState(() {
+          adminName = doc['nama'] ?? 'Admin';
+          adminRole = doc['role'] ?? 'admin';
+        });
+      }
+    } catch (e) {
+      print("ADMIN DATA ERROR: $e");
+    }
+  }
+
+  Future<void> loadDashboardData() async {
+    try {
+      // ================= USERS =================
+      final usersSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .get();
+
+      totalPengguna = usersSnapshot.docs.length;
+
+      penggunaAktif = usersSnapshot.docs.where((doc) {
+        final data = doc.data();
+
+        return data.containsKey('statusAktif') && data['statusAktif'] == true;
+      }).length;
+
+      // Login dalam 30 hari terakhir
+      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+
+      login30Hari = usersSnapshot.docs.where((doc) {
+        final data = doc.data();
+
+        if (!data.containsKey('lastLogin')) {
+          return false;
+        }
+
+        final lastLogin = data['lastLogin'];
+
+        if (lastLogin is! Timestamp) {
+          return false;
+        }
+
+        return lastLogin.toDate().isAfter(thirtyDaysAgo);
+      }).length;
+
+      growthSpots.clear();
+      growthLabels.clear();
+
+      Map<String, int> userGrowthMap = {};
+      int cumulativeUsers = 0;
+
+      List<QueryDocumentSnapshot<Map<String, dynamic>>> sortedUsers = List.from(
+        usersSnapshot.docs,
+      );
+
+      sortedUsers.sort((a, b) {
+        Timestamp aCreated = a.data()['createdAt'];
+        Timestamp bCreated = b.data()['createdAt'];
+
+        return aCreated.compareTo(bCreated);
+      });
+      for (var doc in sortedUsers) {
+        final data = doc.data();
+
+        if (data['createdAt'] != null) {
+          Timestamp createdAt = data['createdAt'];
+
+          String dateLabel = DateFormat('d MMM').format(createdAt.toDate());
+
+          cumulativeUsers++;
+
+          // simpan total user terakhir pada tanggal tersebut
+          userGrowthMap[dateLabel] = cumulativeUsers;
+        }
+      }
+      int index = 0;
+
+      userGrowthMap.forEach((date, totalUser) {
+        growthSpots.add(FlSpot(index.toDouble(), totalUser.toDouble()));
+
+        growthLabels.add(date);
+
+        index++;
+      });
+      // ================= CLASSES =================
+      final classesSnapshot = await FirebaseFirestore.instance
+          .collection('classes')
+          .get();
+
+      totalKelas = classesSnapshot.docs.length;
+
+      print("TOTAL USER     : $totalPengguna");
+      print("PENGGUNA AKTIF : $penggunaAktif");
+      print("LOGIN 30 HARI  : $login30Hari");
+      print("TOTAL KELAS    : $totalKelas");
+      print("JUMLAH SPOTS = ${growthSpots.length}");
+      print(growthLabels);
+
+      setState(() {});
+    } catch (e) {
+      print("DASHBOARD ERROR: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +152,7 @@ class DashboardAdmin extends StatelessWidget {
         backgroundColor: const Color(0xFFEAF3F7),
 
         /// DRAWER
-        drawer: const AdminDrawer(),
+        drawer: AdminDrawer(refreshDashboard: loadAdminData),
 
         /// HEADER
         appBar: AppBar(
@@ -23,24 +161,24 @@ class DashboardAdmin extends StatelessWidget {
           titleSpacing: 16,
           iconTheme: const IconThemeData(color: Colors.white),
 
-          title: const Column(
+          title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 "Selamat pagi,",
                 style: TextStyle(fontSize: 12, color: Colors.white),
               ),
               Text(
-                "Dinda Karlina",
-                style: TextStyle(
+                adminName,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
               Text(
-                "Super Admin",
-                style: TextStyle(fontSize: 10, color: Colors.white70),
+                adminRole == "admin" ? "Super Admin" : adminRole,
+                style: const TextStyle(fontSize: 10, color: Colors.white70),
               ),
             ],
           ),
@@ -61,34 +199,37 @@ class DashboardAdmin extends StatelessWidget {
                   crossAxisSpacing: 12,
                   childAspectRatio: 1.1,
                 ),
-                children: const [
+                children: [
                   StatCard(
                     icon: Icons.group,
-                    value: "1.410",
+                    value: totalPengguna.toString(),
                     title: "Total Pengguna",
-                    percent: "+12% bulan ini",
+                    percent: "${totalPengguna} akun terdaftar",
                     isPositive: true,
                   ),
+
                   StatCard(
                     icon: Icons.person,
-                    value: "803",
+                    value: penggunaAktif.toString(),
                     title: "Pengguna Aktif",
-                    percent: "+8% bulan ini",
+                    percent: "aktif dalam 30 hari",
                     isPositive: true,
                   ),
+
                   StatCard(
                     icon: Icons.layers,
-                    value: "254",
-                    title: "Kelas Aktif",
-                    percent: "+5% bulan ini",
+                    value: totalKelas.toString(),
+                    title: "Total Kelas",
+                    percent: "kelas tersedia",
                     isPositive: true,
                   ),
+
                   StatCard(
-                    icon: Icons.error,
-                    value: "21",
-                    title: "Laporan Masalah",
-                    percent: "+2 belum ditangani",
-                    isPositive: false,
+                    icon: Icons.login,
+                    value: login30Hari.toString(),
+                    title: "Login 30 Hari",
+                    percent: "login dalam 30 hari",
+                    isPositive: true,
                   ),
                 ],
               ),
@@ -107,21 +248,28 @@ class DashboardAdmin extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "Aktivitas Login (1 bulan)",
+                      "Pertumbuhan Pengguna (30 Hari Terakhir)",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text("Desember", style: TextStyle(fontSize: 12)),
-                    const SizedBox(height: 4),
                     const Text(
-                      "12",
-                      style: TextStyle(
-                        fontSize: 26,
+                      "Juli 2026",
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      totalPengguna.toString(),
+                      style: const TextStyle(
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    const Text(
+                      "total pengguna terdaftar",
+                      style: TextStyle(fontSize: 11, color: Colors.black54),
                     ),
                     const SizedBox(height: 12),
 
@@ -145,50 +293,39 @@ class DashboardAdmin extends StatelessWidget {
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 interval: 1,
+                                reservedSize: 32,
                                 getTitlesWidget: (value, meta) {
-                                  switch (value.toInt()) {
-                                    case 0:
-                                      return const Text(
-                                        "week 1",
-                                        style: TextStyle(fontSize: 10),
-                                      );
-                                    case 3:
-                                      return const Text(
-                                        "week 2",
-                                        style: TextStyle(fontSize: 10),
-                                      );
-                                    case 6:
-                                      return const Text(
-                                        "week 3",
-                                        style: TextStyle(fontSize: 10),
-                                      );
+                                  final index = value.toInt();
+
+                                  if (index < 0 ||
+                                      index >= growthLabels.length) {
+                                    return const SizedBox();
                                   }
-                                  return const SizedBox();
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      growthLabels[index],
+                                      style: const TextStyle(fontSize: 9),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
                           ),
                           lineBarsData: [
                             LineChartBarData(
+                              spots: growthSpots.isEmpty
+                                  ? [const FlSpot(0, 0)]
+                                  : growthSpots,
                               isCurved: true,
                               color: const Color(0xFF2ECC71),
                               barWidth: 3,
-                              dotData: FlDotData(show: false),
+                              dotData: FlDotData(show: true),
                               belowBarData: BarAreaData(
                                 show: true,
-                                color: const Color(
-                                  0xFF2ECC71,
-                                ).withOpacity(0.15),
+                                color: const Color(0x262ECC71),
                               ),
-                              spots: const [
-                                FlSpot(0, 70),
-                                FlSpot(1, 65),
-                                FlSpot(2, 68),
-                                FlSpot(3, 50),
-                                FlSpot(4, 45),
-                                FlSpot(5, 55),
-                                FlSpot(6, 40),
-                              ],
                             ),
                           ],
                         ),
@@ -207,7 +344,9 @@ class DashboardAdmin extends StatelessWidget {
 
 /// ================= DRAWER =================
 class AdminDrawer extends StatelessWidget {
-  const AdminDrawer({super.key});
+  final VoidCallback refreshDashboard;
+
+  const AdminDrawer({super.key, required this.refreshDashboard});
 
   @override
   Widget build(BuildContext context) {
@@ -254,11 +393,13 @@ class AdminDrawer extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.person),
                     title: const Text("User Profile"),
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const ProfileAdmin()),
                       );
+
+                      refreshDashboard();
                     },
                   ),
                 ],

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "162226382701",
+    "project_id": "nalar-d1fb0",
+    "storage_bucket": "nalar-d1fb0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162226382701:android:1d245d8189bab212919c64",
+        "android_client_info": {
+          "package_name": "com.example.our_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDoO6uUTpeDF8ZNrK4aUxp_6QFWUl0ng38"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

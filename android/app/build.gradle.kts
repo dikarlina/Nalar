@@ -20,8 +20,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.our_app"   q
-        minSdk = 21 // 🔥 WAJIB untuk Firebase
+        applicationId = "com.example.our_app"   
+        minSdk = flutter.minSdkVersion // 🔥 WAJIB untuk Firebase
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

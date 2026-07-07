@@ -76,27 +76,38 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (isLoginMode) {
-        // LOGIN
-        UserCredential userCredential =
-            await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
+  // LOGIN
+  UserCredential userCredential =
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+    email: email,
+    password: password,
+  );
 
-        String userEmail = userCredential.user?.email ?? "";
+  // Ambil data user dari Firestore
+  DocumentSnapshot userDoc = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(userCredential.user!.uid)
+      .get();
 
-        if (userEmail == "mauvesagara@gmail.com") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const DashboardAdmin()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        }
-      } else {
+  // Ambil role
+  String role = userDoc['role'];
+
+  if (role == 'admin') {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DashboardAdmin(),
+      ),
+    );
+  } else {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+      ),
+    );
+  }
+} else {
         // REGISTER
         UserCredential userCredential =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
