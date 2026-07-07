@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Tambahkan import ini
 
 import 'home_screen.dart';
+import 'isi_kelas.dart';
+import 'daftar_tugas.dart';
+import 'anggota_kelas.dart';
 
 class ForumKelasScreen extends StatefulWidget {
   final String classId;
@@ -29,6 +32,8 @@ class _ForumKelasScreenState extends State<ForumKelasScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  int _selectedIndex = 3;
+
   // Dapatkan user yang sedang login saat ini
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
@@ -36,6 +41,33 @@ class _ForumKelasScreenState extends State<ForumKelasScreen> {
       .collection('classes')
       .doc(widget.classId)
       .collection('messages');
+
+  void _onItemTapped(int index) {
+    if (index == _selectedIndex) return;
+
+    if (index == 0) {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (_) => ClassDetailsScreen(
+          classId: widget.classId, className: widget.className,
+          section: widget.section, subject: widget.subject, room: widget.room,
+        ),
+      ));
+    } else if (index == 1) {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (_) => DaftarTugasScreen(
+          classId: widget.classId, className: widget.className,
+          section: widget.section, subject: widget.subject, room: widget.room,
+        ),
+      ));
+    } else if (index == 2) {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (_) => AnggotaKelasScreen(
+          classId: widget.classId, className: widget.className,
+          section: widget.section, subject: widget.subject, room: widget.room,
+        ),
+      ));
+    }
+  }
 
   void sendMessage() async {
     final text = _controller.text.trim();
@@ -257,6 +289,29 @@ class _ForumKelasScreenState extends State<ForumKelasScreen> {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: kBorder)),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: kBlue,
+          unselectedItemColor: const Color(0xFFB0BEC5),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.class_outlined), label: 'Kelas'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Tugas'),
+            BottomNavigationBarItem(icon: Icon(Icons.people_outline), label: 'Anggota'),
+            BottomNavigationBarItem(icon: Icon(Icons.forum_outlined), label: 'Forum'),
+          ],
+        ),
       ),
     );
   }

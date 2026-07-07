@@ -283,7 +283,7 @@ class _MeetingRequestScreenState extends State<MeetingRequestScreen> {
         'className': selectedClassName,
         'topic': _topicController.text.trim(),
         'requestedAt': Timestamp.fromDate(requestDateTime),
-        'expireTime': 'Valid untill schedule',
+        'expireTime': 'Valid until schedule',
         'status': 'pending',
       });
 
@@ -304,6 +304,31 @@ class _MeetingRequestScreenState extends State<MeetingRequestScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal mengirim request: $e")));
     } finally {
       setModalState(() => _isSubmitLoading = false);
+    }
+  }
+
+  // ⭐ FUNGSI BARU: Cek dan update otomatis meeting yang sudah lewat waktu
+  Future<void> _autoCompleteExpiredMeetings(List<QueryDocumentSnapshot> docs) async {
+    final now = DateTime.now();
+    
+    for (var doc in docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final status = data['status'] ?? '';
+      
+      // Hanya proses yang statusnya 'pending' atau 'scheduled'
+      if (status == 'pending' || status == 'scheduled') {
+        final requestedAt = data['requestedAt'] as Timestamp?;
+        
+        if (requestedAt != null) {
+          final meetingTime = requestedAt.toDate();
+          
+          // Jika waktu meeting sudah lewat, update ke 'completed'
+          if (meetingTime.isBefore(now)) {
+            await doc.reference.update({'status': 'completed'});
+            print('✅ Meeting ${doc.id} otomatis di-completed karena sudah lewat waktu');
+          }
+        }
+      }
     }
   }
 
@@ -331,7 +356,6 @@ class _MeetingRequestScreenState extends State<MeetingRequestScreen> {
         label: const Text("Minta Pertemuan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // MODIFIKASI UTAMA: Mengambil semua dokumen tanpa filter query di awal, agar data siswa dan pengajar masuk semuanya
         stream: FirebaseFirestore.instance.collection('meeting_requests').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -340,15 +364,51 @@ class _MeetingRequestScreenState extends State<MeetingRequestScreen> {
 
           final allDocs = snapshot.data?.docs ?? [];
           
+          // ⭐ PENTING: Panggil fungsi auto-complete sebelum filter
+          // Tapi karena ini async, kita panggil tanpa menunggu (fire and forget)
+          // Biar tidak nge-block UI
+          _autoCompleteExpiredMeetings(allDocs);
+          
           // Filter data lokal: Data akan muncul jika Kamu adalah Pelajar Pemohon ATAU Kamu adalah Pengajar Penerima
           final userDocs = allDocs.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
             return data['studentId'] == currentUid || data['teacherId'] == currentUid;
           }).toList();
 
-          final pendingDocs = userDocs.where((doc) => doc['status'] == 'pending').toList();
-          final scheduledDocs = userDocs.where((doc) => doc['status'] == 'scheduled').toList();
-          final completedDocs = userDocs.where((doc) => doc['status'] == 'completed').toList();
+          // ⭐ MODIFIKASI: Setelah auto-complete, filter ulang berdasarkan status terbaru
+          final pendingDocs = userDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['status'] == 'pending';
+          }).toList();
+          
+          final scheduledDocs = userDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            // Cek juga apakah masih belum lewat waktu
+            final requestedAt = data['requestedAt'] as Timestamp?;
+            if (requestedAt != null) {
+              final meetingTime = requestedAt.toDate();
+              // Hanya tampilkan di scheduled jika waktu belum lewat
+              if (meetingTime.isBefore(DateTime.now())) {
+                return false; // Sembunyikan dari scheduled karena sudah lewat
+              }
+            }
+            return data['status'] == 'scheduled';
+          }).toList();
+          
+          final completedDocs = userDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            // Termasuk yang statusnya scheduled tapi sudah lewat waktu
+            if (data['status'] == 'scheduled') {
+              final requestedAt = data['requestedAt'] as Timestamp?;
+              if (requestedAt != null) {
+                final meetingTime = requestedAt.toDate();
+                if (meetingTime.isBefore(DateTime.now())) {
+                  return true; // Tampilkan di completed jika sudah lewat
+                }
+              }
+            }
+            return data['status'] == 'completed';
+          }).toList();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.only(left: 24, right: 24, top: 20, bottom: 80),
@@ -405,6 +465,9 @@ class _MeetingRequestScreenState extends State<MeetingRequestScreen> {
 
     // Validasi Hak Akses Tombol Aksi: Hanya bernilai true jika Kamu adalah GURU/PENGAJAR di kelas ini
     final bool isTeacherOfThisClass = (data['teacherId'] == currentUid);
+    
+    // Cek apakah meeting sudah lewat waktu
+    final bool isExpired = (data['requestedAt'] as Timestamp?)?.toDate().isBefore(DateTime.now()) ?? false;
 
     return MeetingRequestItem(
       docId: doc.id,
@@ -412,9 +475,9 @@ class _MeetingRequestScreenState extends State<MeetingRequestScreen> {
       topic: data['topic'] ?? '-',
       date: formattedDate,
       expireTime: data['expireTime'],
-      isPending: data['status'] == 'pending',
-      isCompleted: data['status'] == 'completed',
-      showActionButtons: isTeacherOfThisClass, // Dikirim ke widget item card
+      isPending: data['status'] == 'pending' && !isExpired,
+      isCompleted: data['status'] == 'completed' || (data['status'] == 'scheduled' && isExpired),
+      showActionButtons: isTeacherOfThisClass && !isExpired, // Sembunyikan tombol aksi jika sudah expired
     );
   }
 
@@ -447,7 +510,7 @@ class MeetingRequestItem extends StatefulWidget {
   final String? expireTime;
   final bool isPending;
   final bool isCompleted;
-  final bool showActionButtons; // Menerima parameter kontrol tombol aksi
+  final bool showActionButtons;
 
   const MeetingRequestItem({
     super.key, 
@@ -508,7 +571,7 @@ class _MeetingRequestItemState extends State<MeetingRequestItem> {
             ),
           ),
           
-          // KONTROL AKSES: Tombol Accept dan Done hanya dirender jika showActionButtons bernilai TRUE (User adalah Pengajar)
+          // KONTROL AKSES: Tombol Accept dan Done hanya dirender jika showActionButtons bernilai TRUE
           if (widget.showActionButtons) ...[
             if (widget.isPending)
               Padding(

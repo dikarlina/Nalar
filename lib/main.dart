@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'firebase_options.dart';
 import 'auth_screen.dart';
 
@@ -25,6 +27,26 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'NALAR',
+      theme: ThemeData(
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF7F9FB),
+
+        // ── Font lebih menarik, berlaku otomatis ke semua Text() ──
+        // karena TextStyle di seluruh app tidak set fontFamily sendiri.
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(
+          Theme.of(context).textTheme,
+        ),
+
+        // ── Transisi antar halaman jadi halus (slide + fade) ──
+        // berlaku ke semua Navigator.push(MaterialPageRoute(...))
+        // yang sudah ada di seluruh app, tanpa perlu diubah satu-satu.
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: const {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
+      ),
       home: const AuthScreen(),
     );
   }

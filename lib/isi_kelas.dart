@@ -205,7 +205,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
     setState(() => _selectedIndex = index);
 
     if (index == 1) {
-      Navigator.push(context, MaterialPageRoute(
+      Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => DaftarTugasScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
@@ -213,7 +213,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
       ));
     }
     if (index == 2) {
-      Navigator.push(context, MaterialPageRoute(
+      Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => AnggotaKelasScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
@@ -221,7 +221,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
       ));
     }
     if (index == 3) {
-      Navigator.push(context, MaterialPageRoute(
+      Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => ForumKelasScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,

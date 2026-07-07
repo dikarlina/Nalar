@@ -42,21 +42,21 @@ class _AnggotaKelasScreenState extends State<AnggotaKelasScreen> {
     if (index == _selectedIndex) return;
 
     if (index == 0) {
-      Navigator.push(context, MaterialPageRoute(
+      Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => ClassDetailsScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
         ),
       ));
     } else if (index == 1) {
-      Navigator.push(context, MaterialPageRoute(
+      Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => DaftarTugasScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
         ),
       ));
     } else if (index == 3) {
-      Navigator.push(context, MaterialPageRoute(
+      Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => ForumKelasScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
