@@ -174,125 +174,170 @@ class _AuthScreenState extends State<AuthScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F9FB),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Column(
             children: [
-              SizedBox(height: screenHeight * 0.05),
+              SizedBox(height: screenHeight * 0.03),
+
+              // ── Wordmark ──
               const Text(
                 'NALAR',
                 style: TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
                   color: Color(0xFF327CA0),
-                  letterSpacing: 2,
+                  letterSpacing: 4,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.03),
+              const SizedBox(height: 4),
+              Text(
+                'Belajar jadi lebih mudah',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                  letterSpacing: 0.5,
+                ),
+              ),
+
+              SizedBox(height: screenHeight * 0.025),
               Image.asset(
                 'assets/logo1.png',
-                height: screenHeight * 0.2,
+                height: screenHeight * 0.16,
               ),
               SizedBox(height: screenHeight * 0.03),
-              Text(
-                isLoginMode ? 'Login' : 'Create an account',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isLoginMode
-                    ? 'Enter your credentials to login'
-                    : 'Fill in your details to sign up',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 25),
 
-              // Nama field (hanya saat Sign Up)
-              if (!isLoginMode) ...[
-                _AnimatedTextField(
-                  controller: nameController,
-                  focusNode: nameFocusNode,
-                  hintText: 'Nama lengkap',
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Email field
-              _AnimatedTextField(
-                controller: emailController,
-                focusNode: emailFocusNode,
-                hintText: 'email@domain.com',
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 12),
-
-              // Password field
-              _AnimatedPasswordField(
-                controller: passwordController,
-                focusNode: passwordFocusNode,
-                hintText: 'Enter your password',
-                isVisible: isPasswordVisible,
-                onToggleVisibility: () {
-                  setState(() => isPasswordVisible = !isPasswordVisible);
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // Action button
-              SizedBox(
+              // ── Form Card ──
+              Container(
                 width: double.infinity,
-                height: 50,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : handleAction,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF327CA0),
-                      disabledBackgroundColor:
-                          const Color(0xFF327CA0).withOpacity(0.6),
-                      elevation: isLoading ? 0 : 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isLoginMode ? 'Login' : 'Create an account',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A2D3D),
                       ),
                     ),
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            isLoginMode ? 'Login' : 'Sign Up',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isLoginMode
+                          ? 'Enter your credentials to login'
+                          : 'Fill in your details to sign up',
+                      style: const TextStyle(
+                        color: Color(0xFF8FA3B0),
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Nama field (hanya saat Sign Up)
+                    if (!isLoginMode) ...[
+                      _AnimatedTextField(
+                        controller: nameController,
+                        focusNode: nameFocusNode,
+                        hintText: 'Nama lengkap',
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Email field
+                    _AnimatedTextField(
+                      controller: emailController,
+                      focusNode: emailFocusNode,
+                      hintText: 'email@domain.com',
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Password field
+                    _AnimatedPasswordField(
+                      controller: passwordController,
+                      focusNode: passwordFocusNode,
+                      hintText: 'Enter your password',
+                      isVisible: isPasswordVisible,
+                      onToggleVisibility: () {
+                        setState(() => isPasswordVisible = !isPasswordVisible);
+                      },
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Action button
+                    Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: isLoading
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: const Color(0xFF327CA0).withOpacity(0.28),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                      ),
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : handleAction,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF327CA0),
+                          disabledBackgroundColor:
+                              const Color(0xFF327CA0).withOpacity(0.6),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                  ),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : Text(
+                                isLoginMode ? 'Login' : 'Sign Up',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 22),
 
               // Toggle login/register
               GestureDetector(
                 onTap: toggleMode,
                 child: RichText(
+                  textAlign: TextAlign.center,
                   text: TextSpan(
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: Color(0xFF1A2D3D),
                       fontSize: 13,
                     ),
                     children: [
@@ -305,7 +350,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         text: isLoginMode ? "Sign Up" : "Login",
                         style: const TextStyle(
                           color: Color(0xFF327CA0),
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],

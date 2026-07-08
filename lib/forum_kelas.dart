@@ -8,6 +8,20 @@ import 'isi_kelas.dart';
 import 'daftar_tugas.dart';
 import 'anggota_kelas.dart';
 
+// ── Transisi cepat khusus untuk pindah tab lewat bottom nav ──
+// Fade tipis + durasi singkat, biar kerasa instan kayak switch tab
+// pada umumnya, bukan slide penuh seperti Navigator.push biasa.
+Route _tabRoute(Widget page) {
+  return PageRouteBuilder(
+    pageBuilder: (_, __, ___) => page,
+    transitionDuration: const Duration(milliseconds: 160),
+    reverseTransitionDuration: const Duration(milliseconds: 160),
+    transitionsBuilder: (_, animation, __, child) {
+      return FadeTransition(opacity: animation, child: child);
+    },
+  );
+}
+
 class ForumKelasScreen extends StatefulWidget {
   final String classId;
   final String className;
@@ -44,24 +58,25 @@ class _ForumKelasScreenState extends State<ForumKelasScreen> {
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
+    setState(() => _selectedIndex = index);
 
     if (index == 0) {
-      Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => ClassDetailsScreen(
+      Navigator.pushReplacement(context, _tabRoute(
+        ClassDetailsScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
         ),
       ));
     } else if (index == 1) {
-      Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => DaftarTugasScreen(
+      Navigator.pushReplacement(context, _tabRoute(
+        DaftarTugasScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
         ),
       ));
     } else if (index == 2) {
-      Navigator.pushReplacement(context, MaterialPageRoute(
-        builder: (_) => AnggotaKelasScreen(
+      Navigator.pushReplacement(context, _tabRoute(
+        AnggotaKelasScreen(
           classId: widget.classId, className: widget.className,
           section: widget.section, subject: widget.subject, room: widget.room,
         ),

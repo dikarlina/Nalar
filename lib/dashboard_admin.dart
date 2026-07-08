@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:our_app/profile_admin.dart';
+import 'auth_screen.dart';
 
 class DashboardAdmin extends StatefulWidget {
   const DashboardAdmin({super.key});
@@ -29,6 +30,15 @@ class _DashboardAdminState extends State<DashboardAdmin> {
     super.initState();
     loadAdminData();
     loadDashboardData();
+  }
+
+  // ── Sapaan kondisional berdasarkan jam saat ini ──
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour >= 4 && hour < 11) return "Selamat Pagi,";
+    if (hour >= 11 && hour < 15) return "Selamat Siang,";
+    if (hour >= 15 && hour < 19) return "Selamat Sore,";
+    return "Selamat Malam,";
   }
 
   Future<void> loadAdminData() async {
@@ -131,13 +141,6 @@ class _DashboardAdminState extends State<DashboardAdmin> {
 
       totalKelas = classesSnapshot.docs.length;
 
-      print("TOTAL USER     : $totalPengguna");
-      print("PENGGUNA AKTIF : $penggunaAktif");
-      print("LOGIN 30 HARI  : $login30Hari");
-      print("TOTAL KELAS    : $totalKelas");
-      print("JUMLAH SPOTS = ${growthSpots.length}");
-      print(growthLabels);
-
       setState(() {});
     } catch (e) {
       print("DASHBOARD ERROR: $e");
@@ -147,40 +150,47 @@ class _DashboardAdminState extends State<DashboardAdmin> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: const Color(0xFFEAF3F7),
+        backgroundColor: const Color(0xFFF7F9FB),
 
         /// DRAWER
-        drawer: AdminDrawer(refreshDashboard: loadAdminData),
+        drawer: AdminDrawer(adminName: adminName, refreshDashboard: loadAdminData),
 
         /// HEADER
         appBar: AppBar(
-          backgroundColor: const Color(0xFF3A7CA5),
+          backgroundColor: Colors.white,
           elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: Colors.black12,
+          scrolledUnderElevation: 1,
           titleSpacing: 16,
-          iconTheme: const IconThemeData(color: Colors.white),
+          iconTheme: const IconThemeData(color: Color(0xFF327CA0)),
 
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Selamat pagi,",
-                style: TextStyle(fontSize: 12, color: Colors.white),
+              Text(
+                _greeting,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF8FA3B0)),
               ),
               Text(
                 adminName,
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A2D3D),
                 ),
               ),
               Text(
                 adminRole == "admin" ? "Super Admin" : adminRole,
-                style: const TextStyle(fontSize: 10, color: Colors.white70),
+                style: const TextStyle(fontSize: 10, color: Color(0xFF8FA3B0)),
               ),
             ],
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(height: 1, color: const Color(0xFFEEF2F5)),
           ),
         ),
 
@@ -206,6 +216,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     title: "Total Pengguna",
                     percent: "${totalPengguna} akun terdaftar",
                     isPositive: true,
+                    accentColor: const Color(0xFF327CA0),
                   ),
 
                   StatCard(
@@ -214,6 +225,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     title: "Pengguna Aktif",
                     percent: "aktif dalam 30 hari",
                     isPositive: true,
+                    accentColor: const Color(0xFF2E86AB),
                   ),
 
                   StatCard(
@@ -222,6 +234,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     title: "Total Kelas",
                     percent: "kelas tersedia",
                     isPositive: true,
+                    accentColor: const Color(0xFF1A6B8A),
                   ),
 
                   StatCard(
@@ -230,6 +243,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     title: "Login 30 Hari",
                     percent: "login dalam 30 hari",
                     isPositive: true,
+                    accentColor: const Color(0xFF3D8FA6),
                   ),
                 ],
               ),
@@ -241,8 +255,15 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF3F7),
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,26 +271,28 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                     const Text(
                       "Pertumbuhan Pengguna (30 Hari Terakhir)",
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 14,
+                        color: Color(0xFF1A2D3D),
                       ),
                     ),
                     const SizedBox(height: 8),
                     const Text(
                       "Juli 2026",
-                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF8FA3B0)),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       totalPengguna.toString(),
                       style: const TextStyle(
                         fontSize: 32,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A2D3D),
                       ),
                     ),
                     const Text(
                       "total pengguna terdaftar",
-                      style: TextStyle(fontSize: 11, color: Colors.black54),
+                      style: TextStyle(fontSize: 11, color: Color(0xFF8FA3B0)),
                     ),
                     const SizedBox(height: 12),
 
@@ -306,7 +329,10 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                                     padding: const EdgeInsets.only(top: 8),
                                     child: Text(
                                       growthLabels[index],
-                                      style: const TextStyle(fontSize: 9),
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        color: Color(0xFF8FA3B0),
+                                      ),
                                     ),
                                   );
                                 },
@@ -343,84 +369,197 @@ class _DashboardAdminState extends State<DashboardAdmin> {
 }
 
 /// ================= DRAWER =================
+/// Style disamakan dengan _buildDrawer() di home_screen.dart:
+/// header biru dengan avatar inisial, menu list dengan _drawerItem,
+/// divider tipis, dan tombol Keluar merah di bagian bawah yang
+/// benar-benar sign out + kembali ke AuthScreen.
 class AdminDrawer extends StatelessWidget {
+  final String adminName;
   final VoidCallback refreshDashboard;
 
-  const AdminDrawer({super.key, required this.refreshDashboard});
+  const AdminDrawer({
+    super.key,
+    required this.adminName,
+    required this.refreshDashboard,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            /// HEADER
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text(
-                "NALAR",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                  color: Color(0xFF3A7CA5),
-                ),
-              ),
-            ),
-
-            const Divider(),
-
-            /// MENU
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(
-                children: [
-                  /// ACTIVE
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF9FB7C3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      leading: const Icon(Icons.home),
-                      title: const Text("Beranda"),
-                      onTap: () {},
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          // ── Header ──────────────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+            color: const Color(0xFF327CA0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Avatar inisial
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.35),
+                      width: 2,
                     ),
                   ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    adminName.isNotEmpty
+                        ? adminName
+                            .trim()
+                            .split(' ')
+                            .map((w) => w.isNotEmpty ? w[0] : '')
+                            .take(2)
+                            .join()
+                            .toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  adminName.isNotEmpty ? adminName : 'Admin',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  FirebaseAuth.instance.currentUser?.email ?? "",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.75),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                  const SizedBox(height: 10),
+          // ── Scrollable menu area ─────────────────────────────────────────
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
 
-                  ListTile(
-                    leading: const Icon(Icons.person),
-                    title: const Text("User Profile"),
+                  _drawerItem(
+                    icon: Icons.home_outlined,
+                    label: "Beranda",
+                    selected: true,
+                    onTap: () => Navigator.pop(context),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  _drawerItem(
+                    icon: Icons.person_outline,
+                    label: "User Profile",
                     onTap: () async {
+                      Navigator.pop(context);
                       await Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const ProfileAdmin()),
                       );
-
                       refreshDashboard();
                     },
                   ),
+
+                  const SizedBox(height: 8),
+
+                  // Divider
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      height: 1,
+                      color: const Color(0xFFF0F4F7),
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
                 ],
               ),
             ),
+          ),
 
-            const Spacer(),
-
-            /// LOGOUT
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text("Keluar"),
-                onTap: () {
-                  Navigator.pop(context);
-                },
+          // ── Keluar button ────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                FirebaseAuth.instance.signOut();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  (route) => false,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red.shade400, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      "Keluar",
+                      style: TextStyle(
+                        color: Colors.red.shade400,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerItem({
+    required IconData icon,
+    required String label,
+    bool selected = false,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: selected ? const Color(0xFF327CA0) : Colors.grey[500],
+          size: 22,
         ),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: selected ? const Color(0xFF327CA0) : Colors.grey[700],
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+        selected: selected,
+        selectedTileColor: const Color(0xFF327CA0).withOpacity(0.07),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: onTap,
       ),
     );
   }
@@ -433,6 +572,7 @@ class StatCard extends StatelessWidget {
   final String title;
   final String percent;
   final bool isPositive;
+  final Color accentColor;
 
   const StatCard({
     super.key,
@@ -441,6 +581,7 @@ class StatCard extends StatelessWidget {
     required this.title,
     required this.percent,
     required this.isPositive,
+    this.accentColor = const Color(0xFF327CA0),
   });
 
   @override
@@ -448,32 +589,56 @@ class StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF9FB7C3),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+              color: accentColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18),
+            child: Icon(icon, size: 18, color: accentColor),
           ),
-          const Spacer(),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1A2D3D),
+            ),
           ),
-          Text(title, style: const TextStyle(fontSize: 11)),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A2D3D),
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             percent,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
-              color: isPositive ? Colors.green : Colors.red,
+              color: isPositive ? const Color(0xFF2ECC71) : const Color(0xFFE05252),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
